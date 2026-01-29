@@ -212,5 +212,5 @@ This is intended as a low-cost demo. BigQuery and GCS may incur small charges de
 ---
 
 ## Acknowledgements
-This project was developed as part of the DataTalksClub Data Engineering Zoomcamp (workflow orchestration / GCP modules), with modifications for a complete “train → export → serve” example.
-Thanks to the DataTalksClub community for inspiration and feedback!
+This project was developed as part of the DataTalksClub Data Engineering Zoomcamp (workflow orchestration / GCP modules). Some scaffolding and configuration patterns follow the course materials, and this repository extends them into a complete “ingest → train → export → serve” example.
+Thanks to the DataTalksClub community for inspiration and feedback.
