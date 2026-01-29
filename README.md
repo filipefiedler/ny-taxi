@@ -21,8 +21,8 @@ The exported models are included in `serving_dir/`, so you can run the local ser
 5. **TensorFlow Serving** serves the SavedModel locally over HTTP.
 
 **Data scale (full run)**
-- Rows: **124,048,218**
-- Size: **27.8 GB**
+- Rows: **132 million**
+- Size: **28 GB**
 
 ---
 
@@ -86,10 +86,10 @@ The model uses 7 features from NYC TLC trip records:
 ### Model Performance
 Model evaluation is produced by BigQuery ML during training:
 
-| Model | RMSE | MAE | Dataset |
-|-------|------|-----|---------|
-| Yellow Taxi | 10.1751 | 1.0846 | Yellow tripdata (~95M rows) |
-| Green Taxi | 3.5716 | 0.8853 | Green tripdata (~29M rows) |
+| Model | RMSE | MAE | Dataset Size | Records |
+|-------|------|-----|--------------|---------|
+| Yellow Taxi | 10.1751 | 1.0846 | 27.8 GB | ~124M rows |
+| Green Taxi | 3.5716 | 0.8853 | 1.8 GB | ~8M rows |
 
 **Note**: RMSE is higher for yellow taxis due to greater variance in tip amounts across diverse trip patterns and zones.
 
