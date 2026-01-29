@@ -1,0 +1,23 @@
+id: test_gcp_connection
+namespace: ingestion
+description: Simple flow to test GCP connection using KVs
+
+tasks:
+  - id: list_gcs_bucket
+    type: io.kestra.plugin.gcp.gcs.List
+    from: "gs://{{kv('GCP_BUCKET_NAME')}}/"
+
+  - id: test_bigquery
+    type: io.kestra.plugin.gcp.bigquery.Query
+    sql: |
+      SELECT 
+        '{{kv('GCP_PROJECT_ID')}}' as project_id,
+        '{{kv('GCP_DATASET')}}' as dataset,
+        CURRENT_TIMESTAMP() as test_time
+    fetchOne: true
+
+pluginDefaults:
+  - type: io.kestra.plugin.gcp
+    values:
+      projectId: "{{kv('GCP_PROJECT_ID')}}"
+      location: "{{kv('GCP_LOCATION')}}"
