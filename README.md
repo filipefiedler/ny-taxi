@@ -100,68 +100,93 @@ Model evaluation is produced by BigQuery ML during training:
 
 ---
 
-## Full replication (GCP + Terraform + Kestra + BigQuery ML)
+# Full Replication Guide (GCP + Terraform + Kestra + BigQuery ML)
 
-This reproduces the ingestion + training workflow. It assumes you have a GCP project and permissions to create resources.
+This reproduces the complete ingestion + training workflow using a single automated command.
 
-### Requirements
+## Requirements
 - Docker + Docker Compose
-- Terraform
-- A GCP project
+- Make
+- A GCP project with billing enabled
 
-### 1) Set up GCP authentication (Codespaces-friendly)
-1. Create a GCP project.
-2. Create a **Terraform service account** with permissions to create/manage:
-   - BigQuery datasets/tables
-   - GCS buckets/objects
-3. Create a **Kestra service account** with permissions to:
-   - read/write to the relevant GCS bucket(s)
-   - run BigQuery load jobs / queries
+## 1) Set up GCP authentication (GitHub Codespaces)
 
-> Note: This repo uses broad roles in places to keep setup simple. A “least privilege” version is listed under **Next improvements**.
+### Create GCP Project
+- Create a new GCP project or use an existing one
+- Enable billing
 
-4. Save keys in GitHub Codespaces secrets:
-   - `GCP_CREDENTIALS_TERRAFORM`
-   - `GCP_CREDENTIALS_KESTRA`
-5. Write the credentials to temp files and set permissions:
-```bash
-bash utils/set_keys.sh
+### Create Service Accounts
+
+**Terraform Service Account** - create/manage:
+- BigQuery datasets/tables
+- GCS buckets/objects
+
+**Kestra Service Account** - permissions for:
+- Read/write to GCS buckets
+- Run BigQuery load jobs and queries
+
+> **Note**: This repo uses broad roles to simplify setup. For production, use least-privilege principles.
+
+### Save Credentials in GitHub Codespaces Secrets
+- `GCP_CREDENTIALS_TERRAFORM` - JSON key for Terraform SA
+- `GCP_CREDENTIALS_KESTRA` - JSON key for Kestra SA
+
+### Update Configuration Files
+
+**`kestra/set_kvs.yaml`**:
+```yaml
+value: your-project-id          # Replace with your project ID
+value: your-bucket-name         # Replace with your bucket name
+value: ny_taxi_data            # Your dataset name
 ```
 
-### 2) Provision infrastructure with Terraform
-1. Install Terraform (if needed):
-```bash
-bash terraform/install_terraform.sh
+**`docker-compose.yaml`** (lines 55-58):
+```yaml
+GCP_PROJECT_ID: your-project-id
+GCP_LOCATION: us-central1
+GCP_BUCKET_NAME: your-bucket-name
+GCP_DATASET: ny_taxi
 ```
 
-2. Update your GCP project ID in:
-- `terraform/variables.tf`
+## 2) Run Complete Setup (One Command!)
 
-3. Run Terraform:
 ```bash
-cd terraform
-terraform init
-terraform plan
-terraform apply
+make start
 ```
 
-### 3) Run Kestra locally
-```bash
-docker-compose up -d
-```
+### What happens automatically:
+1. ✅ Sets up GCP credentials from Codespaces secrets
+2. ✅ Installs Terraform (if not already installed)
+3. ✅ Initializes and applies Terraform (creates GCS bucket + BigQuery dataset)
+4. ✅ Starts Docker Compose services (Kestra, PostgreSQL, pgAdmin)
+5. ✅ Waits for Kestra to be ready with health checks
+6. ✅ Configures Kestra with your GCP settings (KV store)
+7. ✅ Uploads the `gcp_taxi_scheduled_ingestion` flow to Kestra
 
-Then, in the Kestra UI:
-1. Create a new flow and paste `kestra/gcp_taxi.yaml`.
-2. Trigger a backfill to ingest a date range (e.g., multiple months) for both taxi types (`yellow`, `green`).
+## 3) Trigger Data Ingestion
 
-*(Automation of flow deployment is listed under “Next improvements.”)*
+The flow is uploaded but needs to be triggered. Choose one of the following methods:
 
-### 4) Train the model in BigQuery ML
+📅 **Available data**: January 2019 - July 2021  
+📦 **File format**: `{taxi}_tripdata_YYYY-MM.csv.gz`
+
+### Option A: Automatized Backfill (API for multiple months)
+1. In `kestra/run_backfills.sh`, modify the `start_date` and `end_date` variables to specify the date range to ingest and the taxi type (`yellow` or `green`).
+2. Run the script: `make run-backfills`. This might take some time depending on the date range.
+3. Check if the ingestion completed successfully by runnin `make check` and verifying the last processed file.
+
+### Option B: Manual Execution (UI)
+1. Go to http://localhost:8080/ui/flows/ingestion/gcp_taxi_scheduled_ingestion
+2. Go to triggers tab and click on backfill
+3. Select taxi type: `green` or `yellow`
+4. Monitor execution in real-time in the Executions tab
+
+### 3) Train the model in BigQuery ML
 Run the SQL in:
 - `bigquery/create_model_yellow.sql`
 - `bigquery/create_model_green.sql`
 
-### 5) Export the trained model into `serving_dir/`
+### 4) Export the trained model into `serving_dir/`
 1. Install gcloud SDK (if needed):
 ```bash
 bash bigquery/install_gcsdk.sh
